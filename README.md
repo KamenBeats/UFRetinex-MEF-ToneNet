@@ -38,7 +38,7 @@ This repository contains the official PyTorch implementation of **UFRetinex-MEF-
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 UFRetinex-MEF-ToneNet-Final/
@@ -61,7 +61,7 @@ UFRetinex-MEF-ToneNet-Final/
 
 ---
 
-## ⚙️ Environment Setup
+## Environment Setup
 
 ### Prerequisites
 
@@ -105,7 +105,7 @@ wandb login
 
 ---
 
-## 📂 Dataset Preparation
+## Dataset Preparation
 
 ### Phase 1 (Unsupervised — no GT required)
 
@@ -144,7 +144,7 @@ data_set/train/scene_001/
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 All hyperparameters are managed in `configs/train_config.yaml`.
 
@@ -203,7 +203,7 @@ tonenet:                   # Phase 2 settings
 
 ---
 
-## 🚀 Training
+## Training
 
 ### Phase 1 — Unsupervised Retinex-MEF
 
