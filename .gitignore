@@ -1,0 +1,108 @@
+# ========== Data & Datasets ==========
+dataset/
+LLID_data/
+test_case_phase_1/
+test_case_phase_2/
+data_set/
+
+# ========== Results & Outputs ==========
+result_phase_1_csv/
+result_phase_2_csv/
+results/
+output/
+exp/
+checkpoints/
+runs/
+
+# ========== Temporary Files ==========
+tmp/
+tmp_pip/
+*.tmp
+*.log
+split_log.txt
+
+# ========== Python ==========
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ========== Virtual Environments ==========
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv
+.env
+
+# ========== IDE & Editor ==========
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+.atom/
+.vim/
+
+# ========== Jupyter Notebook ==========
+.ipynb_checkpoints/
+*.ipynb
+
+# ========== OS ==========
+.DS_Store
+Thumbs.db
+*.log
+.trash/
+
+# ========== Installers ==========
+Miniconda3-latest-Linux-x86_64.sh
+miniconda3/
+
+# ========== Git & Version Control ==========
+.git/
+.gitkeep
+
+# ========== Model Files (Large) ==========
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+*.h5
+*.pkl
+
+# ========== Cache Files ==========
+*.cache
+.cache/
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+
+# ========== Package Lock Files (Optional - uncomment if needed) ==========
+# requirements-lock.txt
+# poetry.lock
+# Pipfile.lock

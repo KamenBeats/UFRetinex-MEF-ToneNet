@@ -1,0 +1,78 @@
+# Training Configuration — Phase 1 (Retinex-MEF) & Phase 2 (ToneNet)
+#
+# Phase 1: python train.py --config configs/train_config.yaml
+# Phase 2: python train_tonenet.py --config configs/train_config.yaml --phase1_ckpt exp/.../model/best.pth
+
+# --- Model (Phase 1: Retinex) ---
+model:
+  sre_dim: 32
+  decoder_dim: 64
+  num_blocks: 3
+  num_heads: 8
+  ffn_expansion_factor: 2
+  use_retinex_prior: true
+  l_fusion_hidden: 16
+
+# --- Data ---
+data:
+  train_dir: "data_set/train"
+  val_dir: "data_set/val"
+  test_dir: "data_set/test"
+  gt_dir: null
+  patch_size: 128
+  n_max: 5
+  num_workers: 0
+  augment: true
+
+# --- Training (Phase 1) ---
+training:
+  epochs: 50
+  batch_size: 2
+  lr: 1.0e-4
+  weight_decay: 0
+  step_size: 10
+  gamma: 0.1
+  pretrained: null
+  cross_eval_mode: "rotate"
+  save_every: 5
+  val_every: 5
+
+# --- Loss weights (Phase 1) ---
+loss:
+  w_recon: 1.0
+  w_smooth: 0.1
+  w_init: 0.1
+  w_suppress: 0.3
+  w_consist: 0.1
+  w_fusion: 0.5
+  w_ssim: 0.2
+  w_L_smooth: 0.15
+  w_color_angle: 1.0
+  w_chroma: 2.5
+
+# --- Phase 2: ToneNet ---
+tonenet:
+  base_dim: 32
+  n_curve_iters: 10
+  epochs: 50
+  batch_size: 2
+  lr: 3.0e-4
+  weight_decay: 0
+  w_histogram: 2.0
+  w_style: 0.5
+  w_structure: 1.0
+  w_global_hue: 1.0
+  w_lum_mean: 12.0
+  w_lum_hist: 8.0
+  val_every: 1
+  save_every: 5
+
+# --- Weights & Biases ---
+wandb:
+  enabled: true
+  project: "UFRetinex-MEF"
+  entity: null
+  run_name: "training"
+  tags: ["unsupervised", "mef"]
+  log_images: 4
+  log_model: false
