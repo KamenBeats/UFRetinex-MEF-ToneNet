@@ -1,11 +1,16 @@
 # ========== Data & Datasets ==========
 dataset/
+dataset_sice/
 LLID_data/
 test_case_phase_1/
 test_case_phase_2/
 data_set/
 
 # ========== Results & Outputs ==========
+result
+full_size_test
+test_deghost_output
+output_test/
 result_phase_1_csv/
 result_phase_2_csv/
 results/

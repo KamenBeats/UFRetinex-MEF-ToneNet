@@ -91,18 +91,14 @@ class RetinexPriorGate(nn.Module):
 def compute_mef_quality(L_maps, sat_thresh=0.88, bloom_k=None, bloom_sigma=15.0):
     """
     Three-tier quality weight for MEF:
-      1. EV-aware bell-curve: soft-normalize L by global mean before scoring
-         so extreme dark/bright pairs are handled correctly.
+      1. Contrast bell-curve: favour mid-toned pixels, strongly suppress extremes.
       2. Sigmoid saturation penalty on raw L: detects blown-out pixels.
       3. Bloom proximity (adaptive kernel): suppresses regions near blown areas.
     """
     B, N, C, H, W = L_maps.shape
 
-    # 1. EV-aware bell-curve
-    L_mean = L_maps.mean(dim=[3, 4], keepdim=True).clamp(min=0.05)
-    ev_scale = (0.40 / L_mean).pow(0.5)
-    L_ev = (L_maps * ev_scale).clamp(0, 1)
-    base_q = 1.0 - (2.0 * L_ev - 1.0).pow(2)
+    # 1. Contrast bell-curve (squared for stronger mid-tone preference)
+    base_q = (1.0 - (2.0 * L_maps - 1.0).pow(2)).pow(2)
 
     # 2. Sigmoid saturation penalty
     sat_pen = torch.sigmoid(-15.0 * (L_maps - sat_thresh))
@@ -112,8 +108,8 @@ def compute_mef_quality(L_maps, sat_thresh=0.88, bloom_k=None, bloom_sigma=15.0)
 
     # 3. Bloom proximity (adaptive kernel size ~25% of shortest side, max 151)
     if bloom_k is None:
-        bloom_k = max(41, min(H, W) // 4)
-        bloom_k = min(bloom_k, 151)
+        bloom_k = max(21, min(H, W) // 16)
+        bloom_k = min(bloom_k, 61)
         if bloom_k % 2 == 0:
             bloom_k += 1
     L_flat = L_maps.reshape(B * N, 1, H, W)
@@ -144,7 +140,10 @@ class PyramidLFusion(nn.Module):
 
     @staticmethod
     def _blur(x):
-        return F.avg_pool2d(x, kernel_size=5, stride=1, padding=2)
+        # Proper Gaussian kernel (binomial-4 ≈ σ=1.0) for clean pyramid
+        k = torch.tensor([1., 4., 6., 4., 1.], device=x.device, dtype=x.dtype) / 16.0
+        k2d = (k[None, :] * k[:, None]).expand(x.shape[1], 1, 5, 5)
+        return F.conv2d(x, k2d, padding=2, groups=x.shape[1])
 
     @staticmethod
     def _down(x):
@@ -183,7 +182,18 @@ class PyramidLFusion(nn.Module):
         quality = compute_mef_quality(L_maps)  # (B, N, 1, H, W)
         w = quality / (quality.sum(dim=1, keepdim=True) + 1e-6)
 
-        L_flat = L_maps.reshape(B * N, 1, H, W)
+        # ── Exposure-compensate L_maps before pyramid fusion ──
+        # Different exposures → same scene point has vastly different L values.
+        # If quality weights change spatially (blown boundary), the brightness
+        # difference creates a visible gradient = halo.
+        # Fix: normalize each image's L to a common target mean so that weight
+        # transitions don't produce brightness transitions.
+        L_mean = L_maps.mean(dim=[3, 4], keepdim=True).clamp(min=0.05)  # (B,N,1,1,1)
+        target_L = (L_mean * w.mean(dim=[3, 4], keepdim=True)).sum(dim=1, keepdim=True) \
+                   / (w.mean(dim=[3, 4], keepdim=True).sum(dim=1, keepdim=True) + 1e-6)
+        L_comp = (L_maps * (target_L / L_mean)).clamp(0, 1)
+
+        L_flat = L_comp.reshape(B * N, 1, H, W)
         w_flat = w.reshape(B * N, 1, H, W)
 
         L_pyrs = self._lap_pyr(L_flat)
@@ -328,7 +338,12 @@ class FusionNet(nn.Module):
                 # Quality-weighted mean image as retinex_prior
                 quality = compute_mef_quality(L_maps)
                 w = quality / (quality.sum(dim=1, keepdim=True) + 1e-6)
-                retinex_prior = (images * w).sum(dim=1).clamp(0, 1)  # (B, 3, H, W)
+                # Exposure-compensate before weighted sum
+                I_mean = images.mean(dim=[3, 4], keepdim=True).clamp(min=0.01)
+                target_I = (I_mean * w.mean(dim=[3, 4], keepdim=True)).sum(dim=1, keepdim=True) \
+                           / (w.mean(dim=[3, 4], keepdim=True).sum(dim=1, keepdim=True) + 1e-6)
+                images_comp = (images * (target_I / I_mean)).clamp(0, 1)
+                retinex_prior = (images_comp * w).sum(dim=1).clamp(0, 1)  # (B, 3, H, W)
             else:
                 mean_exposed = images.mean(dim=1)
                 L_safe = L_fused.clamp(min=0.05)
