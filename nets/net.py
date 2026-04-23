@@ -182,12 +182,6 @@ class PyramidLFusion(nn.Module):
         quality = compute_mef_quality(L_maps)  # (B, N, 1, H, W)
         w = quality / (quality.sum(dim=1, keepdim=True) + 1e-6)
 
-        # ── Exposure-compensate L_maps before pyramid fusion ──
-        # Different exposures → same scene point has vastly different L values.
-        # If quality weights change spatially (blown boundary), the brightness
-        # difference creates a visible gradient = halo.
-        # Fix: normalize each image's L to a common target mean so that weight
-        # transitions don't produce brightness transitions.
         L_mean = L_maps.mean(dim=[3, 4], keepdim=True).clamp(min=0.05)  # (B,N,1,1,1)
         target_L = (L_mean * w.mean(dim=[3, 4], keepdim=True)).sum(dim=1, keepdim=True) \
                    / (w.mean(dim=[3, 4], keepdim=True).sum(dim=1, keepdim=True) + 1e-6)
@@ -352,9 +346,6 @@ class FusionNet(nn.Module):
         else:
             Rhat = Rhat_raw
 
-        # Use a smoothed L for cross-attention to prevent L_fused artifacts
-        # from propagating through attention (causing banding in R_refined).
-        # The final output still uses the original L_fused for correct brightness.
         L_for_crossatt = F.avg_pool2d(L_fused, kernel_size=21, stride=1, padding=10)
 
         R = self.patch_embed2(Rhat)
